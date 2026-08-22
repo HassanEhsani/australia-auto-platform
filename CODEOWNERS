@@ -1,0 +1,21 @@
+# Default owner for the entire repository
+* @PROJECT_OWNER
+
+# Backend
+/apps/backend/ @BACKEND_TEAM
+
+# Customer Flutter App
+/apps/customer_app/ @FLUTTER_TEAM
+
+# Admin Dashboard
+/apps/admin_dashboard/ @ADMIN_TEAM
+
+# Shared packages
+/packages/ @ARCHITECTURE_TEAM
+
+# Infrastructure
+/infrastructure/ @DEVOPS_TEAM
+
+# Security-sensitive files
+/SECURITY.md @SECURITY_TEAM
+/.github/ @ARCHITECTURE_TEAM @DEVOPS_TEAM

@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  repository-check:
+    name: Repository Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check required files
+        shell: bash
+        run: |
+          set -e
+
+          required_files=(
+            "README.md"
+            "ARCHITECTURE.md"
+            "CONTRIBUTING.md"
+            "SECURITY.md"
+            "CODEOWNERS"
+            ".gitignore"
+            ".editorconfig"
+            ".gitattributes"
+          )
+
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Missing required file: $file"
+              exit 1
+            fi
+          done
+
+          echo "Repository foundation check passed."
+
+      - name: Check required directories
+        shell: bash
+        run: |
+          set -e
+
+          required_dirs=(
+            "apps/customer_app"
+            "apps/admin_dashboard"
+            "apps/backend"
+            "packages/api_contracts"
+            "packages/design_system"
+            "packages/shared_models"
+            "infrastructure/database/migrations"
+            "infrastructure/database/seeds"
+            "infrastructure/docker"
+            "infrastructure/monitoring"
+            "docs/architecture"
+            "docs/api"
+            "docs/security"
+            "docs/operations"
+            "scripts"
+          )
+
+          for dir in "${required_dirs[@]}"; do
+            if [ ! -d "$dir" ]; then
+              echo "Missing required directory: $dir"
+              exit 1
+            fi
+          done
+
+          echo "Repository structure check passed."

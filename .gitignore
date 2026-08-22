@@ -1,0 +1,65 @@
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# NestJS / TypeScript
+dist/
+coverage/
+.nyc_output/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+.flutter/
+*.iml
+
+# Xcode
+DerivedData/
+Pods/
+*.xcuserstate
+xcuserdata/
+
+# Android
+.gradle/
+local.properties
+captures/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+
+# Test / Coverage
+coverage/
+
+# Docker
+docker-data/
+
+# Temporary
+tmp/
+temp/
