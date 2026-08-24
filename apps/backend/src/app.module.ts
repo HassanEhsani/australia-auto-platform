@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { environmentValidationSchema } from './config/env.validation';
+import { LoggingModule } from './infrastructure/logging/logging.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { HealthModule } from './modules/health/health.module';
         abortEarly: false,
       },
     }),
+    LoggingModule,
     HealthModule,
   ],
   controllers: [AppController],
