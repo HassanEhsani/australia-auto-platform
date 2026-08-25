@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { environmentValidationSchema } from './config/env.validation';
 import { PrismaModule } from './infrastructure/database/prisma.module';
 import { LoggingModule } from './infrastructure/logging/logging.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { HealthModule } from './modules/health/health.module';
     }),
     PrismaModule,
     LoggingModule,
+    AuthModule,
     HealthModule,
   ],
   controllers: [AppController],
