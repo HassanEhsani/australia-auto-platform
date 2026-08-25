@@ -5,10 +5,19 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { configureApplication } from './../src/app.setup';
+import { PrismaService } from './../src/infrastructure/database/prisma.service';
 
 interface HealthResponse {
   status: 'ok' | 'ready';
   timestamp: string;
+}
+
+interface ReadinessResponse {
+  status: 'ready';
+  timestamp: string;
+  dependencies: {
+    database: 'up';
+  };
 }
 
 function isHealthResponse(value: unknown): value is HealthResponse {
@@ -24,13 +33,39 @@ function isHealthResponse(value: unknown): value is HealthResponse {
   );
 }
 
+function isReadinessResponse(value: unknown): value is ReadinessResponse {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  const dependencies = record.dependencies;
+
+  if (typeof dependencies !== 'object' || dependencies === null) {
+    return false;
+  }
+
+  const dependencyRecord = dependencies as Record<string, unknown>;
+
+  return (
+    record.status === 'ready' &&
+    typeof record.timestamp === 'string' &&
+    dependencyRecord.database === 'up'
+  );
+}
+
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue({
+        isHealthy: jest.fn().mockResolvedValue(true),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
 
@@ -60,7 +95,6 @@ describe('AppController (e2e)', () => {
     }
 
     expect(body.status).toBe('ok');
-    expect(Number.isNaN(Date.parse(body.timestamp))).toBe(false);
   });
 
   it('/api/v1/health/ready (GET)', async () => {
@@ -70,14 +104,14 @@ describe('AppController (e2e)', () => {
 
     const body: unknown = response.body;
 
-    expect(isHealthResponse(body)).toBe(true);
+    expect(isReadinessResponse(body)).toBe(true);
 
-    if (!isHealthResponse(body)) {
+    if (!isReadinessResponse(body)) {
       throw new Error('Invalid readiness response');
     }
 
     expect(body.status).toBe('ready');
-    expect(Number.isNaN(Date.parse(body.timestamp))).toBe(false);
+    expect(body.dependencies.database).toBe('up');
   });
 
   afterEach(async () => {

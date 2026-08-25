@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
 
 export interface HealthStatus {
   status: 'ok';
@@ -6,12 +7,17 @@ export interface HealthStatus {
 }
 
 export interface ReadinessStatus {
-  status: 'ready';
+  status: 'ready' | 'not_ready';
   timestamp: string;
+  dependencies: {
+    database: 'up' | 'down';
+  };
 }
 
 @Injectable()
 export class HealthService {
+  constructor(private readonly prisma: PrismaService) {}
+
   getHealth(): HealthStatus {
     return {
       status: 'ok',
@@ -19,10 +25,15 @@ export class HealthService {
     };
   }
 
-  getReadiness(): ReadinessStatus {
+  async getReadiness(): Promise<ReadinessStatus> {
+    const databaseHealthy = await this.prisma.isHealthy();
+
     return {
-      status: 'ready',
+      status: databaseHealthy ? 'ready' : 'not_ready',
       timestamp: new Date().toISOString(),
+      dependencies: {
+        database: databaseHealthy ? 'up' : 'down',
+      },
     };
   }
 }

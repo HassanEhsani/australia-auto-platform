@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { environmentValidationSchema } from './config/env.validation';
+import { PrismaModule } from './infrastructure/database/prisma.module';
 import { LoggingModule } from './infrastructure/logging/logging.module';
 import { HealthModule } from './modules/health/health.module';
 
@@ -17,6 +18,7 @@ import { HealthModule } from './modules/health/health.module';
         abortEarly: false,
       },
     }),
+    PrismaModule,
     LoggingModule,
     HealthModule,
   ],
