@@ -171,7 +171,7 @@ model Session {
 
   userId String @map("user_id") @db.Uuid
 
-  refreshTokenHash String @map("refresh_token_hash") @db.Text
+  refreshTokenHash String @unique @map("refresh_token_hash") @db.Text
 
   deviceId   String? @map("device_id") @db.VarChar(255)
   deviceName String? @map("device_name") @db.VarChar(255)
