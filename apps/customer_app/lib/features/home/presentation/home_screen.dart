@@ -3,7 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../favorites/data/favorite_store.dart';
 import '../../favorites/presentation/favorites_screen.dart';
+import '../../profile/presentation/profile_screen.dart';
 import '../../vehicles/presentation/vehicle_details_screen.dart';
+
+final ValueNotifier<String> _vehicleSearchQuery = ValueNotifier<String>('');
+
+final ValueNotifier<String?> _vehicleCategoryFilter = ValueNotifier<String?>(
+  null,
+);
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -24,23 +31,52 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   const _SearchSection(),
                   const SizedBox(height: 30),
-                  const _SectionHeader(
-                    title: 'Featured Vehicle',
-                    action: 'See All',
+
+                  ValueListenableBuilder<String>(
+                    valueListenable: _vehicleSearchQuery,
+                    builder: (context, query, _) {
+                      if (query.isNotEmpty) {
+                        return const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _SectionHeader(title: 'Search Results'),
+                            SizedBox(height: 14),
+                            _PopularVehicles(),
+                          ],
+                        );
+                      }
+
+                      return const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SectionHeader(
+                            title: 'Featured Vehicle',
+                            action: 'See All',
+                          ),
+                          SizedBox(height: 14),
+                          _FeaturedVehicle(),
+                          SizedBox(height: 30),
+                          _SectionHeader(
+                            title: 'New Arrivals',
+                            action: 'See All',
+                          ),
+                          SizedBox(height: 14),
+                          _NewArrivals(),
+                          SizedBox(height: 30),
+                          _SectionHeader(title: 'Browse by Category'),
+                          SizedBox(height: 14),
+                          _Categories(),
+                          SizedBox(height: 30),
+                          _SectionHeader(
+                            title: 'Popular Vehicles',
+                            action: 'See All',
+                          ),
+                          SizedBox(height: 14),
+                          _PopularVehicles(),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 14),
-                  const _FeaturedVehicle(),
-                  const SizedBox(height: 30),
-                  const _SectionHeader(title: 'Browse by Category'),
-                  const SizedBox(height: 14),
-                  const _Categories(),
-                  const SizedBox(height: 30),
-                  const _SectionHeader(
-                    title: 'Popular Vehicles',
-                    action: 'See All',
-                  ),
-                  const SizedBox(height: 14),
-                  const _PopularVehicles(),
                 ]),
               ),
             ),
@@ -111,19 +147,52 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _SearchSection extends StatelessWidget {
+class _SearchSection extends StatefulWidget {
   const _SearchSection();
+
+  @override
+  State<_SearchSection> createState() => _SearchSectionState();
+}
+
+class _SearchSectionState extends State<_SearchSection> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _vehicleSearchQuery.value = value.trim().toLowerCase();
+    setState(() {});
+  }
+
+  void _clearSearch() {
+    _controller.clear();
+    _vehicleSearchQuery.value = '';
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: SearchBar(
+            controller: _controller,
             hintText: 'Search make, model or year...',
-            leading: Icon(Icons.search_rounded),
-            elevation: WidgetStatePropertyAll(0),
-            backgroundColor: WidgetStatePropertyAll(Colors.white),
+            leading: const Icon(Icons.search_rounded),
+            trailing: [
+              if (_controller.text.isNotEmpty)
+                IconButton(
+                  onPressed: _clearSearch,
+                  icon: const Icon(Icons.close_rounded),
+                ),
+            ],
+            onChanged: _onSearchChanged,
+            elevation: const WidgetStatePropertyAll(0),
+            backgroundColor: const WidgetStatePropertyAll(AppColors.surface),
           ),
         ),
         const SizedBox(width: 10),
@@ -256,6 +325,120 @@ class _FeaturedVehicle extends StatelessWidget {
   }
 }
 
+class _NewArrivals extends StatelessWidget {
+  const _NewArrivals();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 235,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: const [
+          _NewArrivalCard(
+            image: 'assets/images/new_arrivals/new_land_cruiser.jpg',
+            name: 'Toyota Land Cruiser',
+            details: '2025 • New',
+          ),
+          SizedBox(width: 14),
+          _NewArrivalCard(
+            image: 'assets/images/new_arrivals/new_audi_suv.jpg',
+            name: 'Audi SUV',
+            details: '2025 • New',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NewArrivalCard extends StatelessWidget {
+  const _NewArrivalCard({
+    required this.image,
+    required this.name,
+    required this.details,
+  });
+
+  final String image;
+  final String name;
+  final String details;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 230,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              SizedBox(
+                height: 150,
+                width: double.infinity,
+                child: Image.asset(image, fit: BoxFit.cover),
+              ),
+              Positioned(
+                top: 10,
+                left: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: const Text(
+                    'NEW',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  details,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _VehicleStat extends StatelessWidget {
   const _VehicleStat({required this.icon, required this.label});
 
@@ -284,65 +467,106 @@ class _VehicleStat extends StatelessWidget {
 class _Categories extends StatelessWidget {
   const _Categories();
 
+  void _toggleCategory(String category) {
+    if (_vehicleCategoryFilter.value == category) {
+      _vehicleCategoryFilter.value = null;
+    } else {
+      _vehicleCategoryFilter.value = category;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Expanded(
-          child: _CategoryCard(
-            icon: Icons.directions_car_rounded,
-            label: 'Used Cars',
-          ),
-        ),
-        SizedBox(width: 10),
-        Expanded(
-          child: _CategoryCard(
-            icon: Icons.car_crash_outlined,
-            label: 'Damaged',
-          ),
-        ),
-        SizedBox(width: 10),
-        Expanded(
-          child: _CategoryCard(
-            icon: Icons.build_circle_outlined,
-            label: 'Salvage',
-          ),
-        ),
-      ],
+    return ValueListenableBuilder<String?>(
+      valueListenable: _vehicleCategoryFilter,
+      builder: (context, selectedCategory, _) {
+        return Row(
+          children: [
+            Expanded(
+              child: _CategoryCard(
+                icon: Icons.directions_car_rounded,
+                label: 'Used Cars',
+                isSelected: selectedCategory == 'used',
+                onTap: () => _toggleCategory('used'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _CategoryCard(
+                icon: Icons.car_crash_outlined,
+                label: 'Damaged',
+                isSelected: selectedCategory == 'damaged',
+                onTap: () => _toggleCategory('damaged'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _CategoryCard(
+                icon: Icons.build_circle_outlined,
+                label: 'Salvage',
+                isSelected: selectedCategory == 'salvage',
+                onTap: () => _toggleCategory('salvage'),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
 class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({required this.icon, required this.label});
+  const _CategoryCard({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 105,
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: isSelected ? AppColors.primary : AppColors.surface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8E9ED)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: AppColors.accent, size: 30),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 105,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.border,
+              width: isSelected ? 1.5 : 1,
             ),
           ),
-        ],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? AppColors.accent : AppColors.accent,
+                size: 30,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -351,58 +575,139 @@ class _CategoryCard extends StatelessWidget {
 class _PopularVehicles extends StatelessWidget {
   const _PopularVehicles();
 
+  bool _matches(String query, String searchableText) {
+    if (query.isEmpty) return true;
+    return searchableText.toLowerCase().contains(query);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 275,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          ValueListenableBuilder<bool>(
-            valueListenable: FavoriteStore.toyotaRav4,
-            builder: (context, isFavorite, _) {
-              return _VehicleCard(
-                image: 'assets/images/vehicles/toyota_rav4.jpg',
-                name: 'Toyota RAV4',
-                details: '2021 • 48,000 km',
-                price: '\$24,900',
-                heroTag: 'toyota-rav4',
-                isFavorite: isFavorite,
-                onFavoriteTap: FavoriteStore.toggleToyotaRav4,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const VehicleDetailsScreen(),
+    return ValueListenableBuilder<String>(
+      valueListenable: _vehicleSearchQuery,
+      builder: (context, query, _) {
+        return ValueListenableBuilder<String?>(
+          valueListenable: _vehicleCategoryFilter,
+          builder: (context, category, _) {
+            final toyotaMatchesSearch = _matches(
+              query,
+              'Toyota RAV4 2021 Used SUV Automatic 48000',
+            );
+
+            final bmwMatchesSearch = _matches(
+              query,
+              'BMW 320i 2019 Damaged Sedan Automatic',
+            );
+
+            final showToyota =
+                toyotaMatchesSearch && (category == null || category == 'used');
+
+            final showBmw =
+                bmwMatchesSearch && (category == null || category == 'damaged');
+
+            if (!showToyota && !showBmw) {
+              final message = category == 'salvage'
+                  ? 'No salvage vehicles available'
+                  : 'No vehicles found';
+
+              final subtitle = category == 'salvage'
+                  ? 'New salvage stock will appear here.'
+                  : 'Try another make, model, year or category.';
+
+              return Container(
+                height: 180,
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.search_off_rounded,
+                      size: 42,
+                      color: AppColors.textSecondary,
                     ),
-                  );
-                },
-              );
-            },
-          ),
-          const SizedBox(width: 14),
-          ValueListenableBuilder<bool>(
-            valueListenable: FavoriteStore.bmw320i,
-            builder: (context, isFavorite, _) {
-              return _VehicleCard(
-                image: 'assets/images/vehicles/damaged_bmw.jpg',
-                name: 'BMW 320i',
-                details: '2019 • Damaged',
-                price: '\$22,500',
-                heroTag: 'bmw-320i',
-                isFavorite: isFavorite,
-                onFavoriteTap: FavoriteStore.toggleBmw320i,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const VehicleDetailsScreen(isBmw: true),
+                    const SizedBox(height: 12),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  );
-                },
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
               );
-            },
-          ),
-        ],
-      ),
+            }
+
+            return SizedBox(
+              height: 275,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  if (showToyota)
+                    ValueListenableBuilder<bool>(
+                      valueListenable: FavoriteStore.toyotaRav4,
+                      builder: (context, isFavorite, _) {
+                        return _VehicleCard(
+                          image: 'assets/images/vehicles/toyota_rav4.jpg',
+                          name: 'Toyota RAV4',
+                          details: '2021 • 48,000 km',
+                          price: '\$24,900',
+                          heroTag: 'toyota-rav4',
+                          isFavorite: isFavorite,
+                          onFavoriteTap: FavoriteStore.toggleToyotaRav4,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const VehicleDetailsScreen(),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  if (showToyota && showBmw) const SizedBox(width: 14),
+                  if (showBmw)
+                    ValueListenableBuilder<bool>(
+                      valueListenable: FavoriteStore.bmw320i,
+                      builder: (context, isFavorite, _) {
+                        return _VehicleCard(
+                          image: 'assets/images/vehicles/damaged_bmw.jpg',
+                          name: 'BMW 320i',
+                          details: '2019 • Damaged',
+                          price: '\$22,500',
+                          heroTag: 'bmw-320i',
+                          isFavorite: isFavorite,
+                          onFavoriteTap: FavoriteStore.toggleBmw320i,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    const VehicleDetailsScreen(isBmw: true),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -523,32 +828,67 @@ class _BottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: 0,
-      onDestinationSelected: (_) {},
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home_rounded),
-          label: 'Home',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.directions_car_outlined),
-          label: 'Vehicles',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.calendar_month_outlined),
-          label: 'Reservations',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.chat_bubble_outline_rounded),
-          label: 'Messages',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline_rounded),
-          label: 'Profile',
-        ),
-      ],
+    return NavigationBarTheme(
+      data: NavigationBarThemeData(
+        height: 68,
+        backgroundColor: AppColors.surface,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final isSelected = states.contains(WidgetState.selected);
+
+          return IconThemeData(
+            size: 25,
+            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          );
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final isSelected = states.contains(WidgetState.selected);
+
+          return TextStyle(
+            fontSize: 10.5,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          );
+        }),
+      ),
+      child: NavigationBar(
+        selectedIndex: 0,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        onDestinationSelected: (index) {
+          if (index == 4) {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),
+            );
+          }
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.directions_car_outlined),
+            selectedIcon: Icon(Icons.directions_car_rounded),
+            label: 'Vehicles',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month_rounded),
+            label: 'Reservations',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline_rounded),
+            selectedIcon: Icon(Icons.chat_bubble_rounded),
+            label: 'Messages',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 }
