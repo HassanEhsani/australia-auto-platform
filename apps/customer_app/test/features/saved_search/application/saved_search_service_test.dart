@@ -6,17 +6,22 @@ import 'package:customer_app/features/vehicles/application/vehicle_search_servic
 import 'package:customer_app/features/vehicles/data/vehicle_repository.dart';
 import 'package:customer_app/features/vehicles/domain/vehicle.dart';
 import 'package:customer_app/features/vehicles/domain/vehicle_search_filter.dart';
+import '../../../support/vehicle_test_fixtures.dart';
 
 void main() {
   late InMemorySavedSearchRepository savedSearchRepository;
   late SavedSearchService service;
+  late LocalVehicleRepository vehicleRepository;
 
   setUp(() {
     savedSearchRepository = InMemorySavedSearchRepository();
+    vehicleRepository = LocalVehicleRepository(
+      initialVehicles: buildVehicleTestVehicles(),
+    );
 
     service = SavedSearchService(
       savedSearchRepository,
-      VehicleSearchService(LocalVehicleRepository()),
+      VehicleSearchService(vehicleRepository),
     );
   });
 
@@ -48,7 +53,7 @@ void main() {
         ),
       );
 
-      final vehicle = LocalVehicleRepository().getById('bmw-320i-2019');
+      final vehicle = vehicleRepository.getById('bmw-320i-2019');
 
       expect(vehicle, isNotNull);
 
@@ -70,7 +75,7 @@ void main() {
         ),
       );
 
-      final vehicle = LocalVehicleRepository().getById('toyota-rav4-2021');
+      final vehicle = vehicleRepository.getById('toyota-rav4-2021');
 
       expect(vehicle, isNotNull);
 

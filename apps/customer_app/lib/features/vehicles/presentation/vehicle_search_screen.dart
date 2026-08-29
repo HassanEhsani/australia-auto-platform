@@ -8,7 +8,12 @@ import '../domain/vehicle.dart';
 import '../domain/vehicle_search_filter.dart';
 
 class VehicleSearchScreen extends StatefulWidget {
-  const VehicleSearchScreen({super.key});
+  const VehicleSearchScreen({
+    super.key,
+    this.initialFilter = const VehicleSearchFilter(),
+  });
+
+  final VehicleSearchFilter initialFilter;
 
   @override
   State<VehicleSearchScreen> createState() => _VehicleSearchScreenState();
@@ -28,13 +33,28 @@ class _VehicleSearchScreenState extends State<VehicleSearchScreen> {
   String? _make;
   String? _model;
   VehicleCondition? _condition;
+  bool _newArrivalsOnly = false;
 
   late List<Vehicle> _results;
 
   @override
   void initState() {
     super.initState();
-    _results = _searchService.search(const VehicleSearchFilter());
+
+    final initialFilter = widget.initialFilter;
+
+    _queryController.text = initialFilter.query ?? '';
+    _yearFromController.text = initialFilter.yearFrom?.toString() ?? '';
+    _yearToController.text = initialFilter.yearTo?.toString() ?? '';
+    _priceMinController.text = initialFilter.priceMin?.toString() ?? '';
+    _priceMaxController.text = initialFilter.priceMax?.toString() ?? '';
+
+    _make = initialFilter.make;
+    _model = initialFilter.model;
+    _condition = initialFilter.condition;
+    _newArrivalsOnly = initialFilter.newArrivalsOnly;
+
+    _results = _searchService.search(initialFilter);
   }
 
   @override
@@ -63,6 +83,7 @@ class _VehicleSearchScreenState extends State<VehicleSearchScreen> {
       condition: _condition,
       priceMin: _toInt(_priceMinController.text),
       priceMax: _toInt(_priceMaxController.text),
+      newArrivalsOnly: _newArrivalsOnly,
     );
   }
 

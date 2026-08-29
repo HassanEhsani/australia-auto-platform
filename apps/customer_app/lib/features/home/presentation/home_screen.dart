@@ -5,6 +5,7 @@ import '../../favorites/data/favorite_store.dart';
 import '../../favorites/presentation/favorites_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../vehicles/presentation/vehicle_details_screen.dart';
+import '../../vehicles/presentation/vehicle_list_screen.dart';
 import '../../vehicles/presentation/widgets/vehicle_health_mini_badges.dart';
 import '../../vehicles/presentation/vehicle_search_screen.dart';
 import '../../vehicles/application/vehicle_search_service.dart';
@@ -58,12 +59,22 @@ class HomeScreen extends StatelessWidget {
                         );
                       }
 
-                      return const Column(
+                      return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _SectionHeader(
                             title: 'Featured Vehicle',
                             action: 'See All',
+                            onActionTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const VehicleListScreen(
+                                    title: 'All Vehicles',
+                                    filter: VehicleSearchFilter(),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           SizedBox(height: 14),
                           _FeaturedVehicle(),
@@ -71,6 +82,19 @@ class HomeScreen extends StatelessWidget {
                           _SectionHeader(
                             title: 'New Arrivals',
                             action: 'See All',
+                            onActionTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const VehicleListScreen(
+                                    title: 'New Arrivals',
+                                    filter: VehicleSearchFilter(
+                                      condition: VehicleCondition.newVehicle,
+                                      newArrivalsOnly: true,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           SizedBox(height: 14),
                           _NewArrivals(),
@@ -80,11 +104,46 @@ class HomeScreen extends StatelessWidget {
                           _Categories(),
                           SizedBox(height: 30),
                           _SectionHeader(
-                            title: 'Popular Vehicles',
+                            title: 'Used Cars',
                             action: 'See All',
+                            onActionTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const VehicleListScreen(
+                                    title: 'Used Cars',
+                                    filter: VehicleSearchFilter(
+                                      condition: VehicleCondition.used,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           SizedBox(height: 14),
-                          _PopularVehicles(),
+                          _VehicleConditionPreview(
+                            condition: VehicleCondition.used,
+                          ),
+                          SizedBox(height: 30),
+                          _SectionHeader(
+                            title: 'Damaged Vehicles',
+                            action: 'See All',
+                            onActionTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const VehicleListScreen(
+                                    title: 'Damaged Vehicles',
+                                    filter: VehicleSearchFilter(
+                                      condition: VehicleCondition.damaged,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: 14),
+                          _VehicleConditionPreview(
+                            condition: VehicleCondition.damaged,
+                          ),
                         ],
                       );
                     },
@@ -228,10 +287,11 @@ class _SearchSectionState extends State<_SearchSection> {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.action});
+  const _SectionHeader({required this.title, this.action, this.onActionTap});
 
   final String title;
   final String? action;
+  final VoidCallback? onActionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -249,7 +309,7 @@ class _SectionHeader extends StatelessWidget {
         ),
         if (action != null)
           TextButton(
-            onPressed: () {},
+            onPressed: onActionTap,
             child: Text(
               action!,
               style: const TextStyle(
@@ -342,110 +402,119 @@ class _NewArrivals extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vehicles =
+        _vehicleRepository
+            .getAll()
+            .where((vehicle) => vehicle.isNewArrival)
+            .toList()
+          ..sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+
     return SizedBox(
       height: 235,
-      child: ListView(
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        children: const [
-          _NewArrivalCard(
-            image: 'assets/images/new_arrivals/new_land_cruiser.jpg',
-            name: 'Toyota Land Cruiser',
-            details: '2025 • New',
-          ),
-          SizedBox(width: 14),
-          _NewArrivalCard(
-            image: 'assets/images/new_arrivals/new_audi_suv.jpg',
-            name: 'Audi SUV',
-            details: '2025 • New',
-          ),
-        ],
+        itemCount: vehicles.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final vehicle = vehicles[index];
+
+          return _NewArrivalCard(
+            vehicle: vehicle,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => VehicleDetailsScreen(vehicle: vehicle),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
 
 class _NewArrivalCard extends StatelessWidget {
-  const _NewArrivalCard({
-    required this.image,
-    required this.name,
-    required this.details,
-  });
+  const _NewArrivalCard({required this.vehicle, required this.onTap});
 
-  final String image;
-  final String name;
-  final String details;
+  final Vehicle vehicle;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 230,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              SizedBox(
-                height: 150,
-                width: double.infinity,
-                child: Image.asset(image, fit: BoxFit.cover),
-              ),
-              Positioned(
-                top: 10,
-                left: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: const Text(
-                    'NEW',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 230,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+                SizedBox(
+                  height: 150,
+                  width: double.infinity,
+                  child: Image.asset(vehicle.images.first, fit: BoxFit.cover),
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  details,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const Text(
+                      'NEW',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    vehicle.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    '${vehicle.year} • ${vehicle.conditionLabel}',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -479,12 +548,22 @@ class _VehicleStat extends StatelessWidget {
 class _Categories extends StatelessWidget {
   const _Categories();
 
-  void _toggleCategory(String category) {
-    if (_vehicleCategoryFilter.value == category) {
-      _vehicleCategoryFilter.value = null;
-    } else {
-      _vehicleCategoryFilter.value = category;
-    }
+  void _openCategory(
+    BuildContext context, {
+    required String category,
+    required String title,
+    required VehicleCondition condition,
+  }) {
+    _vehicleCategoryFilter.value = category;
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => VehicleListScreen(
+          title: title,
+          filter: VehicleSearchFilter(condition: condition),
+        ),
+      ),
+    );
   }
 
   @override
@@ -499,7 +578,12 @@ class _Categories extends StatelessWidget {
                 icon: Icons.directions_car_rounded,
                 label: 'Used Cars',
                 isSelected: selectedCategory == 'used',
-                onTap: () => _toggleCategory('used'),
+                onTap: () => _openCategory(
+                  context,
+                  category: 'used',
+                  title: 'Used Cars',
+                  condition: VehicleCondition.used,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -508,7 +592,12 @@ class _Categories extends StatelessWidget {
                 icon: Icons.car_crash_outlined,
                 label: 'Damaged',
                 isSelected: selectedCategory == 'damaged',
-                onTap: () => _toggleCategory('damaged'),
+                onTap: () => _openCategory(
+                  context,
+                  category: 'damaged',
+                  title: 'Damaged Vehicles',
+                  condition: VehicleCondition.damaged,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -517,7 +606,12 @@ class _Categories extends StatelessWidget {
                 icon: Icons.build_circle_outlined,
                 label: 'Salvage',
                 isSelected: selectedCategory == 'salvage',
-                onTap: () => _toggleCategory('salvage'),
+                onTap: () => _openCategory(
+                  context,
+                  category: 'salvage',
+                  title: 'Salvage Vehicles',
+                  condition: VehicleCondition.salvage,
+                ),
               ),
             ),
           ],
@@ -584,6 +678,75 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
+class _VehicleConditionPreview extends StatelessWidget {
+  const _VehicleConditionPreview({required this.condition});
+
+  final VehicleCondition condition;
+
+  @override
+  Widget build(BuildContext context) {
+    final vehicles = _vehicleSearchService.search(
+      VehicleSearchFilter(condition: condition),
+    );
+
+    if (vehicles.isEmpty) {
+      return Container(
+        height: 150,
+        width: double.infinity,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Text(
+          'No vehicles available',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 340,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: vehicles.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final vehicle = vehicles[index];
+
+          return ValueListenableBuilder<Set<String>>(
+            valueListenable: FavoriteStore.favoriteVehicleIds,
+            builder: (context, favoriteIds, _) {
+              return _VehicleCard(
+                vehicle: vehicle,
+                image: vehicle.images.first,
+                name: vehicle.displayName,
+                details:
+                    '${vehicle.year} • ${vehicle.odometerKm} km • ${vehicle.conditionLabel}',
+                price: '\$${vehicle.price}',
+                heroTag: 'vehicle-${vehicle.id}',
+                isFavorite: favoriteIds.contains(vehicle.id),
+                onFavoriteTap: () => FavoriteStore.toggle(vehicle.id),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => VehicleDetailsScreen(vehicle: vehicle),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _PopularVehicles extends StatelessWidget {
   const _PopularVehicles();
 
@@ -615,12 +778,14 @@ class _PopularVehicles extends StatelessWidget {
               ),
             );
 
-            final popularVehicles = results.where((vehicle) {
-              return vehicle.id == 'toyota-rav4-2021' ||
-                  vehicle.id == 'bmw-320i-2019';
-            }).toList();
+            final displayVehicles = query.trim().isEmpty && category == null
+                ? results.where((vehicle) {
+                    return vehicle.id == 'toyota-rav4-2021' ||
+                        vehicle.id == 'bmw-320i-2019';
+                  }).toList()
+                : results;
 
-            if (popularVehicles.isEmpty) {
+            if (displayVehicles.isEmpty) {
               final isSalvage = category == 'salvage';
 
               return Container(
@@ -669,54 +834,29 @@ class _PopularVehicles extends StatelessWidget {
               height: 340,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: popularVehicles.length,
+                itemCount: displayVehicles.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 14),
                 itemBuilder: (context, index) {
-                  final vehicle = popularVehicles[index];
+                  final vehicle = displayVehicles[index];
 
-                  if (vehicle.id == 'toyota-rav4-2021') {
-                    return ValueListenableBuilder<bool>(
-                      valueListenable: FavoriteStore.toyotaRav4,
-                      builder: (context, isFavorite, _) {
-                        return _VehicleCard(
-                          vehicle: vehicle,
-                          image: vehicle.images.first,
-                          name: vehicle.displayName,
-                          details:
-                              '${vehicle.year} • ${vehicle.odometerKm.toString()} km',
-                          price: '\$${vehicle.price.toString()}',
-                          heroTag: 'toyota-rav4',
-                          isFavorite: isFavorite,
-                          onFavoriteTap: FavoriteStore.toggleToyotaRav4,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const VehicleDetailsScreen(),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    );
-                  }
-
-                  return ValueListenableBuilder<bool>(
-                    valueListenable: FavoriteStore.bmw320i,
-                    builder: (context, isFavorite, _) {
+                  return ValueListenableBuilder<Set<String>>(
+                    valueListenable: FavoriteStore.favoriteVehicleIds,
+                    builder: (context, favoriteIds, _) {
                       return _VehicleCard(
                         vehicle: vehicle,
                         image: vehicle.images.first,
                         name: vehicle.displayName,
-                        details: '${vehicle.year} • ${vehicle.conditionLabel}',
-                        price: '\$${vehicle.price.toString()}',
-                        heroTag: 'bmw-320i',
-                        isFavorite: isFavorite,
-                        onFavoriteTap: FavoriteStore.toggleBmw320i,
+                        details:
+                            '${vehicle.year} • ${vehicle.odometerKm} km • ${vehicle.conditionLabel}',
+                        price: '\$${vehicle.price}',
+                        heroTag: 'vehicle-${vehicle.id}',
+                        isFavorite: favoriteIds.contains(vehicle.id),
+                        onFavoriteTap: () => FavoriteStore.toggle(vehicle.id),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
                               builder: (_) =>
-                                  const VehicleDetailsScreen(isBmw: true),
+                                  VehicleDetailsScreen(vehicle: vehicle),
                             ),
                           );
                         },

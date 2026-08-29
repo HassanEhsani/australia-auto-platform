@@ -4,9 +4,12 @@ import 'package:customer_app/features/vehicles/application/vehicle_search_servic
 import 'package:customer_app/features/vehicles/data/vehicle_repository.dart';
 import 'package:customer_app/features/vehicles/domain/vehicle.dart';
 import 'package:customer_app/features/vehicles/domain/vehicle_search_filter.dart';
+import '../../../support/vehicle_test_fixtures.dart';
 
 void main() {
-  final repository = LocalVehicleRepository();
+  final repository = LocalVehicleRepository(
+    initialVehicles: buildVehicleTestVehicles(),
+  );
   final service = VehicleSearchService(repository);
 
   group('VehicleSearchService', () {
