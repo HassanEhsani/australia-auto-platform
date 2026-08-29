@@ -5,11 +5,22 @@ import '../../favorites/data/favorite_store.dart';
 import '../../favorites/presentation/favorites_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../vehicles/presentation/vehicle_details_screen.dart';
+import '../../vehicles/presentation/vehicle_search_screen.dart';
+import '../../vehicles/application/vehicle_search_service.dart';
+import '../../vehicles/data/vehicle_repository.dart';
+import '../../vehicles/domain/vehicle.dart';
+import '../../vehicles/domain/vehicle_search_filter.dart';
 
 final ValueNotifier<String> _vehicleSearchQuery = ValueNotifier<String>('');
 
 final ValueNotifier<String?> _vehicleCategoryFilter = ValueNotifier<String?>(
   null,
+);
+
+final LocalVehicleRepository _vehicleRepository = LocalVehicleRepository();
+
+final VehicleSearchService _vehicleSearchService = VehicleSearchService(
+  _vehicleRepository,
 );
 
 class HomeScreen extends StatelessWidget {
@@ -575,9 +586,17 @@ class _CategoryCard extends StatelessWidget {
 class _PopularVehicles extends StatelessWidget {
   const _PopularVehicles();
 
-  bool _matches(String query, String searchableText) {
-    if (query.isEmpty) return true;
-    return searchableText.toLowerCase().contains(query);
+  VehicleCondition? _conditionFromCategory(String? category) {
+    switch (category) {
+      case 'used':
+        return VehicleCondition.used;
+      case 'damaged':
+        return VehicleCondition.damaged;
+      case 'salvage':
+        return VehicleCondition.salvage;
+      default:
+        return null;
+    }
   }
 
   @override
@@ -588,30 +607,20 @@ class _PopularVehicles extends StatelessWidget {
         return ValueListenableBuilder<String?>(
           valueListenable: _vehicleCategoryFilter,
           builder: (context, category, _) {
-            final toyotaMatchesSearch = _matches(
-              query,
-              'Toyota RAV4 2021 Used SUV Automatic 48000',
+            final results = _vehicleSearchService.search(
+              VehicleSearchFilter(
+                query: query,
+                condition: _conditionFromCategory(category),
+              ),
             );
 
-            final bmwMatchesSearch = _matches(
-              query,
-              'BMW 320i 2019 Damaged Sedan Automatic',
-            );
+            final popularVehicles = results.where((vehicle) {
+              return vehicle.id == 'toyota-rav4-2021' ||
+                  vehicle.id == 'bmw-320i-2019';
+            }).toList();
 
-            final showToyota =
-                toyotaMatchesSearch && (category == null || category == 'used');
-
-            final showBmw =
-                bmwMatchesSearch && (category == null || category == 'damaged');
-
-            if (!showToyota && !showBmw) {
-              final message = category == 'salvage'
-                  ? 'No salvage vehicles available'
-                  : 'No vehicles found';
-
-              final subtitle = category == 'salvage'
-                  ? 'New salvage stock will appear here.'
-                  : 'Try another make, model, year or category.';
+            if (popularVehicles.isEmpty) {
+              final isSalvage = category == 'salvage';
 
               return Container(
                 height: 180,
@@ -632,7 +641,9 @@ class _PopularVehicles extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      message,
+                      isSalvage
+                          ? 'No salvage vehicles available'
+                          : 'No vehicles found',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
@@ -642,7 +653,9 @@ class _PopularVehicles extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      subtitle,
+                      isSalvage
+                          ? 'New salvage stock will appear here.'
+                          : 'Try another make, model, year or category.',
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: AppColors.textSecondary),
                     ),
@@ -653,18 +666,23 @@ class _PopularVehicles extends StatelessWidget {
 
             return SizedBox(
               height: 275,
-              child: ListView(
+              child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                children: [
-                  if (showToyota)
-                    ValueListenableBuilder<bool>(
+                itemCount: popularVehicles.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 14),
+                itemBuilder: (context, index) {
+                  final vehicle = popularVehicles[index];
+
+                  if (vehicle.id == 'toyota-rav4-2021') {
+                    return ValueListenableBuilder<bool>(
                       valueListenable: FavoriteStore.toyotaRav4,
                       builder: (context, isFavorite, _) {
                         return _VehicleCard(
-                          image: 'assets/images/vehicles/toyota_rav4.jpg',
-                          name: 'Toyota RAV4',
-                          details: '2021 • 48,000 km',
-                          price: '\$24,900',
+                          image: vehicle.images.first,
+                          name: vehicle.displayName,
+                          details:
+                              '${vehicle.year} • ${vehicle.odometerKm.toString()} km',
+                          price: '\$${vehicle.price.toString()}',
                           heroTag: 'toyota-rav4',
                           isFavorite: isFavorite,
                           onFavoriteTap: FavoriteStore.toggleToyotaRav4,
@@ -677,32 +695,32 @@ class _PopularVehicles extends StatelessWidget {
                           },
                         );
                       },
-                    ),
-                  if (showToyota && showBmw) const SizedBox(width: 14),
-                  if (showBmw)
-                    ValueListenableBuilder<bool>(
-                      valueListenable: FavoriteStore.bmw320i,
-                      builder: (context, isFavorite, _) {
-                        return _VehicleCard(
-                          image: 'assets/images/vehicles/damaged_bmw.jpg',
-                          name: 'BMW 320i',
-                          details: '2019 • Damaged',
-                          price: '\$22,500',
-                          heroTag: 'bmw-320i',
-                          isFavorite: isFavorite,
-                          onFavoriteTap: FavoriteStore.toggleBmw320i,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    const VehicleDetailsScreen(isBmw: true),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                ],
+                    );
+                  }
+
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: FavoriteStore.bmw320i,
+                    builder: (context, isFavorite, _) {
+                      return _VehicleCard(
+                        image: vehicle.images.first,
+                        name: vehicle.displayName,
+                        details: '${vehicle.year} • ${vehicle.conditionLabel}',
+                        price: '\$${vehicle.price.toString()}',
+                        heroTag: 'bmw-320i',
+                        isFavorite: isFavorite,
+                        onFavoriteTap: FavoriteStore.toggleBmw320i,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const VehicleDetailsScreen(isBmw: true),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
               ),
             );
           },
@@ -855,6 +873,15 @@ class _BottomNavigation extends StatelessWidget {
         selectedIndex: 0,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         onDestinationSelected: (index) {
+          if (index == 1) {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const VehicleSearchScreen(),
+              ),
+            );
+            return;
+          }
+
           if (index == 4) {
             Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),

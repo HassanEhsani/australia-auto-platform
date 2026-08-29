@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_theme.dart';
 import '../../favorites/presentation/favorites_screen.dart';
+import '../../saved_search/presentation/saved_searches_screen.dart';
+import '../../purchases/presentation/purchase_history_screen.dart';
+import '../../purchases/application/purchase_history_service.dart';
+import '../../purchases/data/mock_purchase_data.dart';
+import '../../purchases/data/purchase_repository.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -17,6 +22,16 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final purchaseRepository = InMemoryPurchaseRepository();
+
+    for (final purchase in MockPurchaseData.purchases) {
+      purchaseRepository.add(purchase);
+    }
+
+    final purchaseHistoryService = PurchaseHistoryService(purchaseRepository);
+
+    final purchaseSummary = purchaseHistoryService.getSummary('customer-1');
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -63,9 +78,15 @@ class ProfileScreen extends StatelessWidget {
               Expanded(
                 child: _ActivityCard(
                   icon: Icons.directions_car_rounded,
-                  value: '0',
+                  value: '${purchaseSummary.totalPurchased}',
                   label: 'Purchased',
-                  onTap: () => _comingSoon(context, 'Purchase History'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PurchaseHistoryScreen(),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -98,6 +119,19 @@ class ProfileScreen extends StatelessWidget {
               ),
               const Divider(height: 1),
               _ProfileMenuItem(
+                icon: Icons.bookmark_border_rounded,
+                title: 'Saved Searches',
+                subtitle: 'Saved vehicle searches and alerts',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const SavedSearchesScreen(),
+                    ),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              _ProfileMenuItem(
                 icon: Icons.calendar_month_outlined,
                 title: 'My Reservations',
                 subtitle: 'View your reservation requests',
@@ -108,7 +142,13 @@ class ProfileScreen extends StatelessWidget {
                 icon: Icons.receipt_long_outlined,
                 title: 'Purchase History',
                 subtitle: 'Vehicles purchased through King Auto',
-                onTap: () => _comingSoon(context, 'Purchase History'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PurchaseHistoryScreen(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
