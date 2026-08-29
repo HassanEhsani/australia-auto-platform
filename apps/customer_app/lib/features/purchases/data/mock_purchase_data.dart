@@ -17,6 +17,8 @@ abstract final class MockPurchaseData {
       branchName: 'King Auto - Rocklea',
       salespersonName: 'Sales Manager',
       saleReference: 'SALE-1001',
+      engineHealthPercentAtPurchase: 92,
+      oilWarningStatusAtPurchase: VehicleOilWarningStatus.off,
       status: PurchaseStatus.completed,
     ),
     PurchaseRecord(
@@ -33,6 +35,8 @@ abstract final class MockPurchaseData {
       branchName: 'King Auto - Rocklea',
       salespersonName: 'Sales Manager',
       saleReference: 'SALE-1002',
+      engineHealthPercentAtPurchase: 64,
+      oilWarningStatusAtPurchase: VehicleOilWarningStatus.on,
       status: PurchaseStatus.completed,
     ),
   ];

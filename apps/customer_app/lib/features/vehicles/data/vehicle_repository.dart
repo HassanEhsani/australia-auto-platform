@@ -27,6 +27,8 @@ final class LocalVehicleRepository implements VehicleRepository {
       location: 'King Auto - Rocklea, QLD 4106',
       images: ['assets/images/vehicles/toyota_rav4.jpg'],
       isNewArrival: false,
+      engineHealthPercent: 92,
+      oilWarningStatus: VehicleOilWarningStatus.off,
       publishedAt: DateTime(2026, 8, 20, 9, 0),
     ),
     Vehicle(
@@ -43,6 +45,8 @@ final class LocalVehicleRepository implements VehicleRepository {
       location: 'King Auto - Rocklea, QLD 4106',
       images: ['assets/images/vehicles/damaged_bmw.jpg'],
       isNewArrival: false,
+      engineHealthPercent: 64,
+      oilWarningStatus: VehicleOilWarningStatus.on,
       publishedAt: DateTime(2026, 8, 18, 14, 30),
     ),
     Vehicle(
@@ -59,6 +63,8 @@ final class LocalVehicleRepository implements VehicleRepository {
       location: 'King Auto - Rocklea, QLD 4106',
       images: ['assets/images/new_arrivals/new_land_cruiser.jpg'],
       isNewArrival: true,
+      engineHealthPercent: 99,
+      oilWarningStatus: VehicleOilWarningStatus.off,
       publishedAt: DateTime(2026, 8, 26, 16, 0),
     ),
     Vehicle(
@@ -75,6 +81,8 @@ final class LocalVehicleRepository implements VehicleRepository {
       location: 'King Auto - Rocklea, QLD 4106',
       images: ['assets/images/new_arrivals/new_audi_suv.jpg'],
       isNewArrival: true,
+      engineHealthPercent: 97,
+      oilWarningStatus: VehicleOilWarningStatus.off,
       publishedAt: DateTime(2026, 8, 26, 17, 30),
     ),
   ];

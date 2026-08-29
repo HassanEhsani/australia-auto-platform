@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_theme.dart';
+import '../../favorites/data/favorite_store.dart';
 import '../../favorites/presentation/favorites_screen.dart';
 import '../../saved_search/presentation/saved_searches_screen.dart';
 import '../../purchases/presentation/purchase_history_screen.dart';
@@ -52,15 +53,20 @@ class ProfileScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _ActivityCard(
-                  icon: Icons.favorite_rounded,
-                  value: '2',
-                  label: 'Favorites',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const FavoritesScreen(),
-                      ),
+                child: ValueListenableBuilder<Set<String>>(
+                  valueListenable: FavoriteStore.favoriteVehicleIds,
+                  builder: (context, favoriteIds, _) {
+                    return _ActivityCard(
+                      icon: Icons.favorite_rounded,
+                      value: '${favoriteIds.length}',
+                      label: 'Favorites',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const FavoritesScreen(),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),

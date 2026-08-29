@@ -5,6 +5,7 @@ import '../../favorites/data/favorite_store.dart';
 import '../../favorites/presentation/favorites_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../vehicles/presentation/vehicle_details_screen.dart';
+import '../../vehicles/presentation/widgets/vehicle_health_mini_badges.dart';
 import '../../vehicles/presentation/vehicle_search_screen.dart';
 import '../../vehicles/application/vehicle_search_service.dart';
 import '../../vehicles/data/vehicle_repository.dart';
@@ -665,7 +666,7 @@ class _PopularVehicles extends StatelessWidget {
             }
 
             return SizedBox(
-              height: 275,
+              height: 340,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: popularVehicles.length,
@@ -678,6 +679,7 @@ class _PopularVehicles extends StatelessWidget {
                       valueListenable: FavoriteStore.toyotaRav4,
                       builder: (context, isFavorite, _) {
                         return _VehicleCard(
+                          vehicle: vehicle,
                           image: vehicle.images.first,
                           name: vehicle.displayName,
                           details:
@@ -702,6 +704,7 @@ class _PopularVehicles extends StatelessWidget {
                     valueListenable: FavoriteStore.bmw320i,
                     builder: (context, isFavorite, _) {
                       return _VehicleCard(
+                        vehicle: vehicle,
                         image: vehicle.images.first,
                         name: vehicle.displayName,
                         details: '${vehicle.year} • ${vehicle.conditionLabel}',
@@ -732,6 +735,7 @@ class _PopularVehicles extends StatelessWidget {
 
 class _VehicleCard extends StatelessWidget {
   const _VehicleCard({
+    required this.vehicle,
     required this.image,
     required this.name,
     required this.details,
@@ -742,6 +746,7 @@ class _VehicleCard extends StatelessWidget {
     this.onFavoriteTap,
   });
 
+  final Vehicle vehicle;
   final String image;
   final String name;
   final String details;
@@ -831,6 +836,8 @@ class _VehicleCard extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  VehicleHealthMiniBadges(vehicle: vehicle),
                 ],
               ),
             ),

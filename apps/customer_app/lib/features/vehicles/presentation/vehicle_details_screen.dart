@@ -1,15 +1,40 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/app_services.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../favorites/data/favorite_store.dart';
+import '../domain/vehicle.dart';
 
 class VehicleDetailsScreen extends StatelessWidget {
-  const VehicleDetailsScreen({super.key, this.isBmw = false});
+  const VehicleDetailsScreen({super.key, this.vehicle, this.isBmw = false});
 
+  final Vehicle? vehicle;
+
+  // Temporary backwards compatibility with the current Home UI.
   final bool isBmw;
+
+  Vehicle get _resolvedVehicle {
+    if (vehicle != null) {
+      return vehicle!;
+    }
+
+    final vehicleId = isBmw
+        ? FavoriteStore.bmw320iId
+        : FavoriteStore.toyotaRav4Id;
+
+    final result = AppServices.vehicleRepository.getById(vehicleId);
+
+    if (result == null) {
+      throw StateError('Vehicle not found: $vehicleId');
+    }
+
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final currentVehicle = _resolvedVehicle;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -20,15 +45,15 @@ class VehicleDetailsScreen extends StatelessWidget {
             backgroundColor: AppColors.background,
             foregroundColor: AppColors.textPrimary,
             actions: [
-              ValueListenableBuilder<bool>(
-                valueListenable: isBmw
-                    ? FavoriteStore.bmw320i
-                    : FavoriteStore.toyotaRav4,
-                builder: (context, isFavorite, _) {
+              ValueListenableBuilder<Set<String>>(
+                valueListenable: FavoriteStore.favoriteVehicleIds,
+                builder: (context, favoriteIds, _) {
+                  final isFavorite = favoriteIds.contains(currentVehicle.id);
+
                   return IconButton(
-                    onPressed: isBmw
-                        ? FavoriteStore.toggleBmw320i
-                        : FavoriteStore.toggleToyotaRav4,
+                    onPressed: () {
+                      FavoriteStore.toggle(currentVehicle.id);
+                    },
                     icon: Icon(
                       isFavorite
                           ? Icons.favorite_rounded
@@ -42,17 +67,18 @@ class VehicleDetailsScreen extends StatelessWidget {
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: Hero(
-                tag: isBmw ? 'bmw-320i' : 'toyota-rav4',
-                child: Image.asset(
-                  isBmw
-                      ? 'assets/images/vehicles/damaged_bmw.jpg'
-                      : 'assets/images/vehicles/toyota_rav4.jpg',
-                  fit: BoxFit.cover,
-                ),
-              ),
+              background: currentVehicle.images.isEmpty
+                  ? const _VehicleImageFallback()
+                  : Image.asset(
+                      currentVehicle.images.first,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) {
+                        return const _VehicleImageFallback();
+                      },
+                    ),
             ),
           ),
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 120),
@@ -63,59 +89,86 @@ class VehicleDetailsScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          isBmw ? 'BMW 320i' : 'Toyota RAV4',
-                          style: TextStyle(
+                          currentVehicle.displayName,
+                          style: const TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
-                      _ConditionBadge(),
+                      _ConditionBadge(condition: currentVehicle.conditionLabel),
                     ],
                   ),
+
                   const SizedBox(height: 6),
+
                   Text(
-                    isBmw
-                        ? '2019 • Sedan • Automatic'
-                        : '2021 • SUV • Automatic',
-                    style: TextStyle(
+                    '${currentVehicle.year} • '
+                    '${currentVehicle.bodyType} • '
+                    '${currentVehicle.transmission}',
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 15,
                     ),
                   ),
+
                   const SizedBox(height: 18),
+
                   Text(
-                    isBmw ? '\$22,500' : '\$24,900',
-                    style: TextStyle(
+                    _formatPrice(currentVehicle.price),
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
+
                   const SizedBox(height: 26),
-                  const _StatsGrid(),
+
+                  _StatsGrid(vehicle: currentVehicle),
+
                   const SizedBox(height: 32),
-                  const _SectionTitle(title: 'Vehicle Overview'),
+
+                  const _SectionTitle(title: 'Vehicle Health'),
+
                   const SizedBox(height: 12),
-                  const Text(
-                    'A clean and practical Toyota RAV4 with strong everyday usability. '
-                    'Available now through King Auto. Contact our sales team or reserve '
-                    'the vehicle to discuss the next steps.',
-                    style: TextStyle(
+
+                  _VehicleHealthCard(vehicle: currentVehicle),
+
+                  const SizedBox(height: 32),
+
+                  const _SectionTitle(title: 'Vehicle Overview'),
+
+                  const SizedBox(height: 12),
+
+                  Text(
+                    '${currentVehicle.displayName} is currently available '
+                    'through King Auto. Review the vehicle information and '
+                    'inspection indicators below, then contact our sales team '
+                    'or reserve the vehicle to discuss the next steps.',
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
                       height: 1.6,
                       fontSize: 15,
                     ),
                   ),
+
                   const SizedBox(height: 30),
+
                   const _SectionTitle(title: 'Vehicle Information'),
+
                   const SizedBox(height: 14),
-                  const _InformationCard(),
+
+                  _InformationCard(vehicle: currentVehicle),
+
                   const SizedBox(height: 30),
+
                   const _SectionTitle(title: 'Location'),
+
                   const SizedBox(height: 12),
-                  const _LocationCard(),
+
+                  _LocationCard(location: currentVehicle.location),
                 ],
               ),
             ),
@@ -128,7 +181,9 @@ class VehicleDetailsScreen extends StatelessWidget {
 }
 
 class _ConditionBadge extends StatelessWidget {
-  const _ConditionBadge();
+  const _ConditionBadge({required this.condition});
+
+  final String condition;
 
   @override
   Widget build(BuildContext context) {
@@ -138,9 +193,9 @@ class _ConditionBadge extends StatelessWidget {
         color: AppColors.accent,
         borderRadius: BorderRadius.circular(100),
       ),
-      child: const Text(
-        'USED',
-        style: TextStyle(
+      child: Text(
+        condition.toUpperCase(),
+        style: const TextStyle(
           color: AppColors.textPrimary,
           fontSize: 12,
           fontWeight: FontWeight.w900,
@@ -151,36 +206,176 @@ class _ConditionBadge extends StatelessWidget {
 }
 
 class _StatsGrid extends StatelessWidget {
-  const _StatsGrid();
+  const _StatsGrid({required this.vehicle});
+
+  final Vehicle vehicle;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
         Expanded(
           child: _StatCard(
             icon: Icons.speed_rounded,
-            value: '48,000 km',
+            value: '${_formatNumber(vehicle.odometerKm)} km',
             label: 'Odometer',
           ),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
             icon: Icons.settings_outlined,
-            value: 'Automatic',
+            value: vehicle.transmission,
             label: 'Transmission',
           ),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
           child: _StatCard(
             icon: Icons.local_gas_station_outlined,
-            value: 'Petrol',
+            value: vehicle.fuelType,
             label: 'Fuel',
           ),
         ),
       ],
+    );
+  }
+}
+
+class _VehicleHealthCard extends StatelessWidget {
+  const _VehicleHealthCard({required this.vehicle});
+
+  final Vehicle vehicle;
+
+  @override
+  Widget build(BuildContext context) {
+    final oilWarningOn = vehicle.oilWarningStatus == VehicleOilWarningStatus.on;
+
+    final oilNotChecked =
+        vehicle.oilWarningStatus == VehicleOilWarningStatus.notChecked;
+
+    final oilColor = oilWarningOn
+        ? AppColors.error
+        : oilNotChecked
+        ? AppColors.textSecondary
+        : AppColors.primary;
+
+    final oilIcon = oilWarningOn
+        ? Icons.warning_amber_rounded
+        : oilNotChecked
+        ? Icons.help_outline_rounded
+        : Icons.check_circle_outline_rounded;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const CircleAvatar(
+                backgroundColor: AppColors.background,
+                child: Icon(
+                  Icons.health_and_safety_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Engine Health',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                '${vehicle.engineHealthPercent}%',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: LinearProgressIndicator(
+              minHeight: 9,
+              value: vehicle.engineHealthPercent / 100,
+              backgroundColor: AppColors.border,
+              color: vehicle.engineHealthPercent >= 80
+                  ? AppColors.primary
+                  : AppColors.error,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          const Divider(height: 1),
+
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.background,
+                child: Icon(oilIcon, color: oilColor),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Oil Warning Light',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Inspection indicator',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                vehicle.oilWarningLabel,
+                style: TextStyle(color: oilColor, fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Vehicle health values are based on recorded inspection data.',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -252,7 +447,9 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _InformationCard extends StatelessWidget {
-  const _InformationCard();
+  const _InformationCard({required this.vehicle});
+
+  final Vehicle vehicle;
 
   @override
   Widget build(BuildContext context) {
@@ -263,19 +460,19 @@ class _InformationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          _InfoRow(label: 'Make', value: 'Toyota'),
-          Divider(),
-          _InfoRow(label: 'Model', value: 'RAV4'),
-          Divider(),
-          _InfoRow(label: 'Year', value: '2021'),
-          Divider(),
-          _InfoRow(label: 'Body type', value: 'SUV'),
-          Divider(),
-          _InfoRow(label: 'Condition', value: 'Used'),
-          Divider(),
-          _InfoRow(label: 'Stock', value: 'Available'),
+          _InfoRow(label: 'Make', value: vehicle.make),
+          const Divider(),
+          _InfoRow(label: 'Model', value: vehicle.model),
+          const Divider(),
+          _InfoRow(label: 'Year', value: vehicle.year.toString()),
+          const Divider(),
+          _InfoRow(label: 'Body type', value: vehicle.bodyType),
+          const Divider(),
+          _InfoRow(label: 'Condition', value: vehicle.conditionLabel),
+          const Divider(),
+          const _InfoRow(label: 'Stock', value: 'Available'),
         ],
       ),
     );
@@ -314,7 +511,9 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _LocationCard extends StatelessWidget {
-  const _LocationCard();
+  const _LocationCard({required this.location});
+
+  final String location;
 
   @override
   Widget build(BuildContext context) {
@@ -325,33 +524,51 @@ class _LocationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             backgroundColor: AppColors.primary,
             child: Icon(Icons.location_on_outlined, color: Colors.white),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'King Auto - Rocklea',
+                const Text(
+                  'King Auto',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                SizedBox(height: 3),
+                const SizedBox(height: 3),
                 Text(
-                  'Rocklea, QLD 4106',
-                  style: TextStyle(color: AppColors.textSecondary),
+                  location,
+                  style: const TextStyle(color: AppColors.textSecondary),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _VehicleImageFallback extends StatelessWidget {
+  const _VehicleImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: AppColors.border,
+      child: Center(
+        child: Icon(
+          Icons.directions_car_rounded,
+          size: 64,
+          color: AppColors.textSecondary,
+        ),
       ),
     );
   }
@@ -398,4 +615,15 @@ class _BottomActionBar extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatPrice(int value) {
+  return '\$${_formatNumber(value)}';
+}
+
+String _formatNumber(int value) {
+  return value.toString().replaceAllMapped(
+    RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+    (match) => '${match[1]},',
+  );
 }

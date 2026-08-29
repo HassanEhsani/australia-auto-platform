@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_services.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../favorites/data/favorite_store.dart';
 import '../../vehicles/domain/vehicle.dart';
 import '../domain/saved_search.dart';
 
@@ -33,6 +34,15 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
     );
 
     setState(() {});
+  }
+
+  void _showAllMatches(SavedSearch search, List<Vehicle> matches) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            _SavedSearchMatchesScreen(search: search, matches: matches),
+      ),
+    );
   }
 
   String _filterSummary(SavedSearch search) {
@@ -107,6 +117,8 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
                 final matches = AppServices.savedSearchService
                     .getCurrentMatches(search);
 
+                final previewMatches = matches.take(3).toList();
+
                 return Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
@@ -136,7 +148,9 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 6),
+
                       Text(
                         _filterSummary(search),
                         style: const TextStyle(
@@ -144,7 +158,9 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
                           height: 1.4,
                         ),
                       ),
-                      const SizedBox(height: 18),
+
+                      const SizedBox(height: 16),
+
                       Row(
                         children: [
                           const Icon(
@@ -163,7 +179,9 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 12),
+
                       Row(
                         children: [
                           const Expanded(
@@ -183,11 +201,201 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
                           ),
                         ],
                       ),
+
+                      if (previewMatches.isNotEmpty) ...[
+                        const Divider(height: 28),
+
+                        const Text(
+                          'Matching Vehicles',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        ...previewMatches.map(
+                          (vehicle) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _SavedSearchVehicleCard(vehicle: vehicle),
+                          ),
+                        ),
+
+                        if (matches.length > previewMatches.length)
+                          Align(
+                            alignment: Alignment.center,
+                            child: TextButton.icon(
+                              onPressed: () {
+                                _showAllMatches(search, matches);
+                              },
+                              icon: const Icon(Icons.arrow_forward_rounded),
+                              label: Text('View all ${matches.length} matches'),
+                            ),
+                          ),
+                      ],
                     ],
                   ),
                 );
               },
             ),
+    );
+  }
+}
+
+class _SavedSearchVehicleCard extends StatelessWidget {
+  const _SavedSearchVehicleCard({required this.vehicle});
+
+  final Vehicle vehicle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 118,
+            height: 110,
+            child: vehicle.images.isEmpty
+                ? const _VehicleImageFallback()
+                : Image.asset(
+                    vehicle.images.first,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) {
+                      return const _VehicleImageFallback();
+                    },
+                  ),
+          ),
+
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          vehicle.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+
+                      ValueListenableBuilder<Set<String>>(
+                        valueListenable: FavoriteStore.favoriteVehicleIds,
+                        builder: (context, favoriteIds, _) {
+                          final isFavorite = favoriteIds.contains(vehicle.id);
+
+                          return IconButton(
+                            visualDensity: VisualDensity.compact,
+                            tooltip: isFavorite
+                                ? 'Remove from favorites'
+                                : 'Add to favorites',
+                            onPressed: () {
+                              FavoriteStore.toggle(vehicle.id);
+                            },
+                            icon: Icon(
+                              isFavorite
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              color: isFavorite
+                                  ? AppColors.error
+                                  : AppColors.textSecondary,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+
+                  Text(
+                    '${vehicle.year} • ${vehicle.conditionLabel}',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    _formatPrice(vehicle.price),
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavedSearchMatchesScreen extends StatelessWidget {
+  const _SavedSearchMatchesScreen({
+    required this.search,
+    required this.matches,
+  });
+
+  final SavedSearch search;
+  final List<Vehicle> matches;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          search.name,
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+      body: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        itemCount: matches.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          return _SavedSearchVehicleCard(vehicle: matches[index]);
+        },
+      ),
+    );
+  }
+}
+
+class _VehicleImageFallback extends StatelessWidget {
+  const _VehicleImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: AppColors.border,
+      child: Center(
+        child: Icon(
+          Icons.directions_car_rounded,
+          size: 38,
+          color: AppColors.textSecondary,
+        ),
+      ),
     );
   }
 }
@@ -228,4 +436,15 @@ class _EmptySavedSearches extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatPrice(int value) {
+  final text = value.toString();
+
+  final formatted = text.replaceAllMapped(
+    RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+    (match) => '${match[1]},',
+  );
+
+  return '\$$formatted';
 }

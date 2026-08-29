@@ -1,5 +1,7 @@
 enum VehicleCondition { newVehicle, used, damaged, salvage }
 
+enum VehicleOilWarningStatus { off, on, notChecked }
+
 class Vehicle {
   const Vehicle({
     required this.id,
@@ -16,7 +18,12 @@ class Vehicle {
     required this.images,
     required this.isNewArrival,
     required this.publishedAt,
-  });
+    this.engineHealthPercent = 100,
+    this.oilWarningStatus = VehicleOilWarningStatus.notChecked,
+  }) : assert(
+         engineHealthPercent >= 0 && engineHealthPercent <= 100,
+         'Engine health must be between 0 and 100.',
+       );
 
   final String id;
   final String make;
@@ -33,6 +40,9 @@ class Vehicle {
   final bool isNewArrival;
   final DateTime publishedAt;
 
+  final int engineHealthPercent;
+  final VehicleOilWarningStatus oilWarningStatus;
+
   String get displayName => '$make $model';
 
   String get conditionLabel {
@@ -45,6 +55,17 @@ class Vehicle {
         return 'Damaged';
       case VehicleCondition.salvage:
         return 'Salvage';
+    }
+  }
+
+  String get oilWarningLabel {
+    switch (oilWarningStatus) {
+      case VehicleOilWarningStatus.off:
+        return 'OFF';
+      case VehicleOilWarningStatus.on:
+        return 'ON';
+      case VehicleOilWarningStatus.notChecked:
+        return 'NOT CHECKED';
     }
   }
 }

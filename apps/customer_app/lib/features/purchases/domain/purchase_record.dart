@@ -18,7 +18,12 @@ class PurchaseRecord {
     required this.salespersonName,
     required this.saleReference,
     required this.status,
-  });
+    this.engineHealthPercentAtPurchase = 100,
+    this.oilWarningStatusAtPurchase = VehicleOilWarningStatus.notChecked,
+  }) : assert(
+         engineHealthPercentAtPurchase >= 0 &&
+             engineHealthPercentAtPurchase <= 100,
+       );
 
   final String id;
   final String customerId;
@@ -38,6 +43,9 @@ class PurchaseRecord {
   final String saleReference;
 
   final PurchaseStatus status;
+
+  final int engineHealthPercentAtPurchase;
+  final VehicleOilWarningStatus oilWarningStatusAtPurchase;
 
   String get displayName => '$make $model';
 

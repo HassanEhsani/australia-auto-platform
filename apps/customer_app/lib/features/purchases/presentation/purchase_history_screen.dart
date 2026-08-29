@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_theme.dart';
+import '../../vehicles/presentation/widgets/vehicle_health_mini_badges.dart';
 import '../data/mock_purchase_data.dart';
 import '../data/purchase_repository.dart';
 import '../application/purchase_history_service.dart';
@@ -200,6 +201,11 @@ class _PurchaseCard extends StatelessWidget {
                 Text(
                   '${purchase.year} • ${_conditionLabel(purchase.condition)}',
                   style: const TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 12),
+                VehicleHealthMiniBadges.snapshot(
+                  engineHealthPercent: purchase.engineHealthPercentAtPurchase,
+                  oilWarningStatus: purchase.oilWarningStatusAtPurchase,
                 ),
                 const SizedBox(height: 16),
                 _InfoRow(
