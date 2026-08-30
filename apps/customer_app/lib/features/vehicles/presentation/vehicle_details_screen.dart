@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_services.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../compare/application/compare_store.dart';
+import '../../compare/presentation/compare_screen.dart';
 import '../../favorites/data/favorite_store.dart';
 import '../domain/vehicle.dart';
 
@@ -45,6 +47,79 @@ class VehicleDetailsScreen extends StatelessWidget {
             backgroundColor: AppColors.background,
             foregroundColor: AppColors.textPrimary,
             actions: [
+              ValueListenableBuilder<List<String>>(
+                valueListenable: CompareStore.vehicleIds,
+                builder: (context, compareIds, _) {
+                  final isCompared = compareIds.contains(currentVehicle.id);
+
+                  return IconButton(
+                    tooltip: isCompared
+                        ? 'Remove from compare'
+                        : 'Add to compare',
+                    onPressed: () {
+                      final result = CompareStore.toggle(currentVehicle.id);
+
+                      if (result == CompareToggleResult.limitReached) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('You can compare up to 3 vehicles.'),
+                          ),
+                        );
+                      }
+                    },
+                    icon: Icon(
+                      Icons.compare_arrows_rounded,
+                      color: isCompared
+                          ? AppColors.accent
+                          : AppColors.textPrimary,
+                    ),
+                  );
+                },
+              ),
+              ValueListenableBuilder<List<String>>(
+                valueListenable: CompareStore.vehicleIds,
+                builder: (context, compareIds, _) {
+                  if (compareIds.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        tooltip: 'Open compare',
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const CompareScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.compare_rounded,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Positioned(
+                        right: 3,
+                        top: 3,
+                        child: CircleAvatar(
+                          radius: 8,
+                          backgroundColor: AppColors.accent,
+                          child: Text(
+                            '${compareIds.length}',
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
               ValueListenableBuilder<Set<String>>(
                 valueListenable: FavoriteStore.favoriteVehicleIds,
                 builder: (context, favoriteIds, _) {

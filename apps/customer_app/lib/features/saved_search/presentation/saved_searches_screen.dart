@@ -4,6 +4,8 @@ import '../../../app/app_services.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../favorites/data/favorite_store.dart';
 import '../../vehicles/domain/vehicle.dart';
+import '../../vehicles/presentation/vehicle_details_screen.dart';
+import '../../vehicles/presentation/widgets/vehicle_health_mini_badges.dart';
 import '../domain/saved_search.dart';
 
 class SavedSearchesScreen extends StatefulWidget {
@@ -251,101 +253,114 @@ class _SavedSearchVehicleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.background,
+    return Material(
+      color: AppColors.background,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => VehicleDetailsScreen(vehicle: vehicle),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 118,
-            height: 110,
-            child: vehicle.images.isEmpty
-                ? const _VehicleImageFallback()
-                : Image.asset(
-                    vehicle.images.first,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) {
-                      return const _VehicleImageFallback();
-                    },
-                  ),
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
           ),
-
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          vehicle.displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-
-                      ValueListenableBuilder<Set<String>>(
-                        valueListenable: FavoriteStore.favoriteVehicleIds,
-                        builder: (context, favoriteIds, _) {
-                          final isFavorite = favoriteIds.contains(vehicle.id);
-
-                          return IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: isFavorite
-                                ? 'Remove from favorites'
-                                : 'Add to favorites',
-                            onPressed: () {
-                              FavoriteStore.toggle(vehicle.id);
-                            },
-                            icon: Icon(
-                              isFavorite
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              color: isFavorite
-                                  ? AppColors.error
-                                  : AppColors.textSecondary,
-                            ),
-                          );
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 118,
+                height: 150,
+                child: vehicle.images.isEmpty
+                    ? const _VehicleImageFallback()
+                    : Image.asset(
+                        vehicle.images.first,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) {
+                          return const _VehicleImageFallback();
                         },
                       ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              vehicle.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          ValueListenableBuilder<Set<String>>(
+                            valueListenable: FavoriteStore.favoriteVehicleIds,
+                            builder: (context, favoriteIds, _) {
+                              final isFavorite = favoriteIds.contains(
+                                vehicle.id,
+                              );
+
+                              return IconButton(
+                                visualDensity: VisualDensity.compact,
+                                tooltip: isFavorite
+                                    ? 'Remove from favorites'
+                                    : 'Add to favorites',
+                                onPressed: () {
+                                  FavoriteStore.toggle(vehicle.id);
+                                },
+                                icon: Icon(
+                                  isFavorite
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  color: isFavorite
+                                      ? AppColors.error
+                                      : AppColors.textSecondary,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '${vehicle.year} • ${vehicle.conditionLabel}',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _formatPrice(vehicle.price),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      VehicleHealthMiniBadges(vehicle: vehicle),
                     ],
                   ),
-
-                  Text(
-                    '${vehicle.year} • ${vehicle.conditionLabel}',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Text(
-                    _formatPrice(vehicle.price),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

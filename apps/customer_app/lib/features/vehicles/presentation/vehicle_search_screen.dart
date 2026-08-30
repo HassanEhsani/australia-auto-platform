@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_services.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../favorites/data/favorite_store.dart';
+import 'vehicle_details_screen.dart';
+import 'widgets/vehicle_health_mini_badges.dart';
 import '../../saved_search/application/saved_search_service.dart';
 import '../application/vehicle_search_service.dart';
 import '../domain/vehicle.dart';
@@ -409,57 +412,107 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Image.asset(
-            vehicle.images.first,
-            width: 125,
-            height: 110,
-            fit: BoxFit.cover,
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: FavoriteStore.favoriteVehicleIds,
+      builder: (context, favoriteIds, _) {
+        final isFavorite = favoriteIds.contains(vehicle.id);
+
+        return Material(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(18),
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => VehicleDetailsScreen(vehicle: vehicle),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    vehicle.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  SizedBox(
+                    width: 125,
+                    height: 150,
+                    child: Image.asset(vehicle.images.first, fit: BoxFit.cover),
                   ),
-                  const SizedBox(height: 5),
-                  Text(
-                    '${vehicle.year} • ${vehicle.conditionLabel}',
-                    style: const TextStyle(color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: 9),
-                  Text(
-                    '\$${vehicle.price}',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  vehicle.displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 34,
+                                  minHeight: 34,
+                                ),
+                                onPressed: () =>
+                                    FavoriteStore.toggle(vehicle.id),
+                                icon: Icon(
+                                  isFavorite
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 21,
+                                  color: isFavorite
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${vehicle.year} • ${vehicle.conditionLabel}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '\$${vehicle.price}',
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          VehicleHealthMiniBadges(vehicle: vehicle),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

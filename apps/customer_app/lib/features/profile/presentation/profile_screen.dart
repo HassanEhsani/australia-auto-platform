@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_theme.dart';
+import '../../compare/application/compare_store.dart';
+import '../../compare/presentation/compare_screen.dart';
 import '../../favorites/data/favorite_store.dart';
 import '../../favorites/presentation/favorites_screen.dart';
 import '../../saved_search/presentation/saved_searches_screen.dart';
@@ -50,50 +52,78 @@ class ProfileScreen extends StatelessWidget {
           const _SectionTitle(title: 'My Activity'),
           const SizedBox(height: 12),
 
-          Row(
+          Column(
             children: [
-              Expanded(
-                child: ValueListenableBuilder<Set<String>>(
-                  valueListenable: FavoriteStore.favoriteVehicleIds,
-                  builder: (context, favoriteIds, _) {
-                    return _ActivityCard(
-                      icon: Icons.favorite_rounded,
-                      value: '${favoriteIds.length}',
-                      label: 'Favorites',
+              Row(
+                children: [
+                  Expanded(
+                    child: ValueListenableBuilder<Set<String>>(
+                      valueListenable: FavoriteStore.favoriteVehicleIds,
+                      builder: (context, favoriteIds, _) {
+                        return _ActivityCard(
+                          icon: Icons.favorite_rounded,
+                          value: '${favoriteIds.length}',
+                          label: 'Favorites',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const FavoritesScreen(),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ActivityCard(
+                      icon: Icons.calendar_month_rounded,
+                      value: '0',
+                      label: 'Reservations',
+                      onTap: () => _comingSoon(context, 'Reservations'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ActivityCard(
+                      icon: Icons.directions_car_rounded,
+                      value: '${purchaseSummary.totalPurchased}',
+                      label: 'Purchased',
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => const FavoritesScreen(),
+                            builder: (_) => const PurchaseHistoryScreen(),
                           ),
                         );
                       },
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _ActivityCard(
-                  icon: Icons.calendar_month_rounded,
-                  value: '0',
-                  label: 'Reservations',
-                  onTap: () => _comingSoon(context, 'Reservations'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _ActivityCard(
-                  icon: Icons.directions_car_rounded,
-                  value: '${purchaseSummary.totalPurchased}',
-                  label: 'Purchased',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const PurchaseHistoryScreen(),
-                      ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ValueListenableBuilder<List<String>>(
+                      valueListenable: CompareStore.vehicleIds,
+                      builder: (context, compareIds, _) {
+                        return _ActivityCard(
+                          icon: Icons.compare_arrows_rounded,
+                          value: '${compareIds.length}',
+                          label: 'Compare',
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const CompareScreen(),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
