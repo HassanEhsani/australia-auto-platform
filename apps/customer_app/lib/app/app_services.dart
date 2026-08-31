@@ -1,9 +1,20 @@
+import '../features/auth/application/auth_session_store.dart';
+import '../features/auth/data/auth_api_client.dart';
 import '../features/saved_search/application/saved_search_service.dart';
 import '../features/saved_search/data/saved_search_repository.dart';
 import '../features/vehicles/application/vehicle_search_service.dart';
 import '../features/vehicles/data/vehicle_repository.dart';
 
 abstract final class AppServices {
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:3000',
+  );
+
+  static final AuthApiClient authApiClient = AuthApiClient(baseUrl: apiBaseUrl);
+
+  static final AuthSessionStore authSessionStore = AuthSessionStore();
+
   static final LocalVehicleRepository vehicleRepository =
       LocalVehicleRepository();
 
