@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/app_services.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../auth/presentation/login_screen.dart';
 import '../../compare/application/compare_store.dart';
 import '../../compare/presentation/compare_screen.dart';
 import '../../favorites/data/favorite_store.dart';
@@ -13,6 +15,19 @@ import '../../purchases/data/purchase_repository.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _logout(BuildContext context) async {
+    await AppServices.authSessionStore.clear();
+
+    if (!context.mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
 
   void _comingSoon(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -221,7 +236,7 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 24),
 
           OutlinedButton.icon(
-            onPressed: () => _comingSoon(context, 'Logout'),
+            onPressed: () => _logout(context),
             icon: const Icon(Icons.logout_rounded),
             label: const Text('Logout'),
             style: OutlinedButton.styleFrom(
