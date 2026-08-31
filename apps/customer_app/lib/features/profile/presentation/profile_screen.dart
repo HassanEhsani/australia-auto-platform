@@ -17,7 +17,17 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   Future<void> _logout(BuildContext context) async {
-    await AppServices.authSessionStore.clear();
+    final refreshToken = await AppServices.authSessionStore.readRefreshToken();
+
+    try {
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await AppServices.authApiClient.logout(refreshToken: refreshToken);
+      }
+    } catch (_) {
+      // Local logout must still succeed if the server is unavailable.
+    } finally {
+      await AppServices.authSessionStore.clear();
+    }
 
     if (!context.mounted) {
       return;

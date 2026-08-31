@@ -92,6 +92,37 @@ class AuthApiClient {
     return LoginResponse.fromJson(body);
   }
 
+  Future<void> logout({required String refreshToken}) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/api/v1/auth/logout'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({'refreshToken': refreshToken}),
+    );
+
+    if (response.statusCode == 204) {
+      return;
+    }
+
+    var message = 'Unable to sign out. Please try again.';
+
+    if (response.body.isNotEmpty) {
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final serverMessage = body['message'];
+
+        if (serverMessage is String && serverMessage.isNotEmpty) {
+          message = serverMessage;
+        } else if (serverMessage is List && serverMessage.isNotEmpty) {
+          message = serverMessage.join('\n');
+        }
+      } catch (_) {
+        // Keep the generic logout error message.
+      }
+    }
+
+    throw AuthApiException(message, statusCode: response.statusCode);
+  }
+
   Map<String, dynamic> _decodeBody(String body) {
     try {
       return jsonDecode(body) as Map<String, dynamic>;

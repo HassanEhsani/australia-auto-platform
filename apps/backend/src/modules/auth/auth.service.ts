@@ -245,6 +245,20 @@ export class AuthService {
     };
   }
 
+  async logout(refreshToken: string): Promise<void> {
+    const refreshTokenHash = this.tokenService.hashRefreshToken(refreshToken);
+
+    await this.prisma.session.updateMany({
+      where: {
+        refreshTokenHash,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+  }
+
   private normalizeAustralianMobile(phone: string): string {
     const normalized = phone.replace(/[\s()-]/g, '');
 
