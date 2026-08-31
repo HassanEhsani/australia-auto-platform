@@ -32,6 +32,11 @@ export interface LoginResult {
   };
 }
 
+export interface RefreshTokenResult {
+  accessToken: string;
+  refreshToken: string;
+}
+
 export interface RegisteredCustomer {
   id: string;
   firstName: string | null;
@@ -242,6 +247,96 @@ export class AuthService {
         status: identity.user.status,
         roles,
       },
+    };
+  }
+
+  async refresh(refreshToken: string): Promise<RefreshTokenResult> {
+    const refreshTokenHash = this.tokenService.hashRefreshToken(refreshToken);
+
+    const now = new Date();
+
+    const session = await this.prisma.session.findUnique({
+      where: {
+        refreshTokenHash,
+      },
+      select: {
+        id: true,
+        userId: true,
+        expiresAt: true,
+        revokedAt: true,
+        user: {
+          select: {
+            status: true,
+            roleAssignments: {
+              where: {
+                revokedAt: null,
+              },
+              select: {
+                role: {
+                  select: {
+                    code: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!session || session.revokedAt != null || session.expiresAt <= now) {
+      throw new UnauthorizedException('Invalid or expired refresh token.');
+    }
+
+    if (
+      session.user.status === UserStatus.SUSPENDED ||
+      session.user.status === UserStatus.DISABLED
+    ) {
+      await this.prisma.session.updateMany({
+        where: {
+          id: session.id,
+          revokedAt: null,
+        },
+        data: {
+          revokedAt: now,
+        },
+      });
+
+      throw new UnauthorizedException('Account is not available.');
+    }
+
+    const roles = session.user.roleAssignments.map(
+      (assignment) => assignment.role.code,
+    );
+
+    const tokens = await this.tokenService.issueTokens({
+      userId: session.userId,
+      sessionId: session.id,
+      roles,
+    });
+
+    const rotation = await this.prisma.session.updateMany({
+      where: {
+        id: session.id,
+        refreshTokenHash,
+        revokedAt: null,
+        expiresAt: {
+          gt: now,
+        },
+      },
+      data: {
+        refreshTokenHash: tokens.refreshTokenHash,
+        lastUsedAt: now,
+      },
+    });
+
+    if (rotation.count !== 1) {
+      throw new UnauthorizedException('Invalid or already used refresh token.');
+    }
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     };
   }
 
