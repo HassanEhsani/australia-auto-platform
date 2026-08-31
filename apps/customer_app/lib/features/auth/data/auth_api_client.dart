@@ -53,6 +53,23 @@ class LoginResponse {
   }
 }
 
+class RefreshTokenResponse {
+  const RefreshTokenResponse({
+    required this.accessToken,
+    required this.refreshToken,
+  });
+
+  final String accessToken;
+  final String refreshToken;
+
+  factory RefreshTokenResponse.fromJson(Map<String, dynamic> json) {
+    return RefreshTokenResponse(
+      accessToken: json['accessToken'] as String,
+      refreshToken: json['refreshToken'] as String,
+    );
+  }
+}
+
 class AuthApiException implements Exception {
   const AuthApiException(this.message, {this.statusCode});
 
@@ -90,6 +107,25 @@ class AuthApiClient {
     }
 
     return LoginResponse.fromJson(body);
+  }
+
+  Future<RefreshTokenResponse> refresh({required String refreshToken}) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/api/v1/auth/refresh'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({'refreshToken': refreshToken}),
+    );
+
+    final body = _decodeBody(response.body);
+
+    if (response.statusCode != 200) {
+      throw AuthApiException(
+        _extractErrorMessage(body),
+        statusCode: response.statusCode,
+      );
+    }
+
+    return RefreshTokenResponse.fromJson(body);
   }
 
   Future<void> logout({required String refreshToken}) async {
