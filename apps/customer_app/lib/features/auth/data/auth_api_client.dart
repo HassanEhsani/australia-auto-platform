@@ -70,6 +70,35 @@ class RefreshTokenResponse {
   }
 }
 
+class RegisterResponse {
+  const RegisterResponse({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    required this.phone,
+    required this.status,
+  });
+
+  final String id;
+  final String? firstName;
+  final String? lastName;
+  final String email;
+  final String? phone;
+  final String status;
+
+  factory RegisterResponse.fromJson(Map<String, dynamic> json) {
+    return RegisterResponse(
+      id: json['id'] as String,
+      firstName: json['firstName'] as String?,
+      lastName: json['lastName'] as String?,
+      email: json['email'] as String,
+      phone: json['phone'] as String?,
+      status: json['status'] as String,
+    );
+  }
+}
+
 class AuthApiException implements Exception {
   const AuthApiException(this.message, {this.statusCode});
 
@@ -86,6 +115,37 @@ class AuthApiClient {
 
   final String baseUrl;
   final http.Client _client;
+
+  Future<RegisterResponse> register({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/api/v1/auth/register'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'firstName': firstName.trim(),
+        'lastName': lastName.trim(),
+        'email': email.trim(),
+        'phone': phone.trim(),
+        'password': password,
+      }),
+    );
+
+    final body = _decodeBody(response.body);
+
+    if (response.statusCode != 201) {
+      throw AuthApiException(
+        _extractErrorMessage(body),
+        statusCode: response.statusCode,
+      );
+    }
+
+    return RegisterResponse.fromJson(body);
+  }
 
   Future<LoginResponse> login({
     required String email,
