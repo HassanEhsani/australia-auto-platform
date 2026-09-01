@@ -13,6 +13,7 @@ import '../../purchases/application/purchase_history_service.dart';
 import '../../purchases/data/mock_purchase_data.dart';
 import '../../purchases/data/purchase_repository.dart';
 import '../data/profile_api_client.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -53,6 +54,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _openEditProfile(
+    BuildContext context,
+    UserProfile profile,
+  ) async {
+    final updatedProfile = await Navigator.of(context).push<UserProfile>(
+      MaterialPageRoute<UserProfile>(
+        builder: (_) => EditProfileScreen(profile: profile),
+      ),
+    );
+
+    if (updatedProfile == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _profileFuture = Future.value(updatedProfile);
+    });
+  }
+
   void _comingSoon(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -89,9 +109,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             future: _profileFuture,
             builder: (context, snapshot) {
               if (snapshot.hasData) {
+                final profile = snapshot.data!;
+
                 return _ProfileHeader(
-                  profile: snapshot.data!,
-                  onEdit: () => _comingSoon(context, 'Edit Profile'),
+                  profile: profile,
+                  onEdit: () => _openEditProfile(context, profile),
                 );
               }
 
@@ -200,7 +222,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: Icons.person_outline_rounded,
                 title: 'Personal Information',
                 subtitle: 'Name, email and mobile',
-                onTap: () => _comingSoon(context, 'Personal Information'),
+                onTap: () async {
+                  final profile = await _profileFuture;
+
+                  if (!context.mounted) {
+                    return;
+                  }
+
+                  await _openEditProfile(context, profile);
+                },
               ),
               const Divider(height: 1),
               _ProfileMenuItem(

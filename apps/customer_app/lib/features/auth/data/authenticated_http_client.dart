@@ -36,6 +36,14 @@ class AuthenticatedHttpClient {
     return _send(method: 'PUT', path: path, headers: headers, body: body);
   }
 
+  Future<http.Response> patch(
+    String path, {
+    Map<String, String>? headers,
+    Object? body,
+  }) {
+    return _send(method: 'PATCH', path: path, headers: headers, body: body);
+  }
+
   Future<http.Response> delete(
     String path, {
     Map<String, String>? headers,
@@ -101,6 +109,8 @@ class AuthenticatedHttpClient {
         return _client.post(uri, headers: requestHeaders, body: body);
       case 'PUT':
         return _client.put(uri, headers: requestHeaders, body: body);
+      case 'PATCH':
+        return _client.patch(uri, headers: requestHeaders, body: body);
       case 'DELETE':
         return _client.delete(uri, headers: requestHeaders, body: body);
       default:

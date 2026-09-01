@@ -261,6 +261,43 @@ export class AuthService {
     };
   }
 
+  async updateCurrentUser(
+    userId: string,
+    sessionId: string,
+    dto: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+    },
+  ): Promise<CurrentUserProfile> {
+    const data: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+    } = {};
+
+    if (dto.firstName != null) {
+      data.firstName = dto.firstName.trim();
+    }
+
+    if (dto.lastName != null) {
+      data.lastName = dto.lastName.trim();
+    }
+
+    if (dto.phone != null) {
+      data.phone = this.normalizeAustralianMobile(dto.phone);
+    }
+
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data,
+    });
+
+    return this.getCurrentUser(userId, sessionId);
+  }
+
   async getCurrentUser(
     userId: string,
     sessionId: string,

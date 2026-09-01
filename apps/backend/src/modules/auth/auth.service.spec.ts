@@ -13,6 +13,8 @@ describe('AuthService', () => {
   const authIdentityFindUniqueMock = jest.fn();
   const roleFindUniqueMock = jest.fn();
   const userCreateMock = jest.fn();
+  const userUpdateMock = jest.fn();
+  const userFindUniqueMock = jest.fn();
   const authIdentityCreateMock = jest.fn();
   const userRoleAssignmentCreateMock = jest.fn();
   const transactionMock = jest.fn();
@@ -26,6 +28,10 @@ describe('AuthService', () => {
     },
     role: {
       findUnique: roleFindUniqueMock,
+    },
+    user: {
+      update: userUpdateMock,
+      findUnique: userFindUniqueMock,
     },
     $transaction: transactionMock,
   } as unknown as PrismaService;
@@ -218,6 +224,83 @@ describe('AuthService', () => {
         createdAt: true,
       },
     });
+  });
+
+  it('updates the current user profile and preserves the current session', async () => {
+    userUpdateMock.mockResolvedValue({
+      id: 'user-id',
+    });
+
+    userFindUniqueMock.mockResolvedValue({
+      id: 'user-id',
+      firstName: 'Jane',
+      lastName: 'Customer',
+      phone: '+61412345678',
+      status: 'ACTIVE',
+      authIdentities: [
+        {
+          identifier: 'jane@example.com',
+        },
+      ],
+      roleAssignments: [
+        {
+          role: {
+            code: 'CUSTOMER',
+          },
+        },
+      ],
+    });
+
+    const result = await service.updateCurrentUser(
+      'user-id',
+      'current-session-id',
+      {
+        firstName: '  Jane  ',
+        lastName: '  Customer  ',
+        phone: '0412 345 678',
+      },
+    );
+
+    expect(userUpdateMock).toHaveBeenCalledWith({
+      where: {
+        id: 'user-id',
+      },
+      data: {
+        firstName: 'Jane',
+        lastName: 'Customer',
+        phone: '+61412345678',
+      },
+    });
+
+    expect(userFindUniqueMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'user-id',
+        },
+      }),
+    );
+
+    expect(result).toEqual({
+      id: 'user-id',
+      firstName: 'Jane',
+      lastName: 'Customer',
+      email: 'jane@example.com',
+      phone: '+61412345678',
+      status: 'ACTIVE',
+      roles: ['CUSTOMER'],
+      sessionId: 'current-session-id',
+    });
+  });
+
+  it('rejects an invalid mobile number when updating the profile', async () => {
+    await expect(
+      service.updateCurrentUser('user-id', 'current-session-id', {
+        phone: '12345',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(userUpdateMock).not.toHaveBeenCalled();
+    expect(userFindUniqueMock).not.toHaveBeenCalled();
   });
 
   it('fails safely when the CUSTOMER role is not configured', async () => {

@@ -63,6 +63,40 @@ class ProfileApiClient {
 
   final AuthenticatedHttpClient _client;
 
+  Future<UserProfile> updateCurrentUser({
+    required String firstName,
+    required String lastName,
+    required String phone,
+  }) async {
+    final response = await _client.patch(
+      '/api/v1/auth/me',
+      headers: const {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'firstName': firstName.trim(),
+        'lastName': lastName.trim(),
+        'phone': phone.trim(),
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw ProfileApiException(
+        'Unable to update your profile.',
+        statusCode: response.statusCode,
+      );
+    }
+
+    try {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return UserProfile.fromJson(json);
+    } catch (_) {
+      throw const ProfileApiException(
+        'The server returned an invalid profile response.',
+      );
+    }
+  }
+
   Future<UserProfile> getCurrentUser() async {
     final response = await _client.get('/api/v1/auth/me');
 

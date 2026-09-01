@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -23,6 +24,7 @@ import { LoginDto } from './dto/login.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -34,6 +36,19 @@ export class AuthController {
     return this.authService.getCurrentUser(
       request.user!.sub,
       request.user!.sessionId,
+    );
+  }
+
+  @Patch('me')
+  @UseGuards(AccessTokenGuard)
+  updateMe(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<CurrentUserProfile> {
+    return this.authService.updateCurrentUser(
+      request.user!.sub,
+      request.user!.sessionId,
+      dto,
     );
   }
 
