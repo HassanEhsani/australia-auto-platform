@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   AuthService,
+  CurrentUserProfile,
   LoginResult,
   RefreshTokenResult,
   RegisteredCustomer,
@@ -29,12 +30,11 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AccessTokenGuard)
-  me(@Req() request: AuthenticatedRequest) {
-    return {
-      userId: request.user!.sub,
-      sessionId: request.user!.sessionId,
-      roles: request.user!.roles,
-    };
+  me(@Req() request: AuthenticatedRequest): Promise<CurrentUserProfile> {
+    return this.authService.getCurrentUser(
+      request.user!.sub,
+      request.user!.sessionId,
+    );
   }
 
   @Post('login')

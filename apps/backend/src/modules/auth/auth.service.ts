@@ -19,6 +19,17 @@ import { RegisterDto } from './dto/register.dto';
 import { PasswordService } from './services/password.service';
 import { TokenService } from './services/token.service';
 
+export interface CurrentUserProfile {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  phone: string | null;
+  status: string;
+  roles: string[];
+  sessionId: string;
+}
+
 export interface LoginResult {
   accessToken: string;
   refreshToken: string;
@@ -247,6 +258,62 @@ export class AuthService {
         status: identity.user.status,
         roles,
       },
+    };
+  }
+
+  async getCurrentUser(
+    userId: string,
+    sessionId: string,
+  ): Promise<CurrentUserProfile> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        status: true,
+        authIdentities: {
+          where: {
+            provider: AuthProvider.PASSWORD,
+          },
+          select: {
+            identifier: true,
+          },
+          take: 1,
+        },
+        roleAssignments: {
+          where: {
+            revokedAt: null,
+          },
+          select: {
+            role: {
+              select: {
+                code: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const email = user?.authIdentities[0]?.identifier;
+
+    if (!user || !email) {
+      throw new UnauthorizedException('Authenticated user is not available.');
+    }
+
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email,
+      phone: user.phone,
+      status: user.status,
+      roles: user.roleAssignments.map((assignment) => assignment.role.code),
+      sessionId,
     };
   }
 

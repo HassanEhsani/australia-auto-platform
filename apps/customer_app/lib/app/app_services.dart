@@ -2,6 +2,7 @@ import '../features/auth/application/auth_session_manager.dart';
 import '../features/auth/application/auth_session_store.dart';
 import '../features/auth/data/auth_api_client.dart';
 import '../features/auth/data/authenticated_http_client.dart';
+import '../features/profile/data/profile_api_client.dart';
 import '../features/saved_search/application/saved_search_service.dart';
 import '../features/saved_search/data/saved_search_repository.dart';
 import '../features/vehicles/application/vehicle_search_service.dart';
@@ -28,6 +29,10 @@ abstract final class AppServices {
         authSessionStore: authSessionStore,
         authSessionManager: authSessionManager,
       );
+
+  static final ProfileApiClient profileApiClient = ProfileApiClient(
+    authenticatedHttpClient,
+  );
 
   static final LocalVehicleRepository vehicleRepository =
       LocalVehicleRepository();

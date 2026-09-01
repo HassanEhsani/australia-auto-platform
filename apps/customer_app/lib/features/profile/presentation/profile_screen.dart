@@ -12,9 +12,23 @@ import '../../purchases/presentation/purchase_history_screen.dart';
 import '../../purchases/application/purchase_history_service.dart';
 import '../../purchases/data/mock_purchase_data.dart';
 import '../../purchases/data/purchase_repository.dart';
+import '../data/profile_api_client.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<UserProfile> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = AppServices.profileApiClient.getCurrentUser();
+  }
 
   Future<void> _logout(BuildContext context) async {
     final refreshToken = await AppServices.authSessionStore.readRefreshToken();
@@ -71,7 +85,30 @@ class ProfileScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
-          _ProfileHeader(onEdit: () => _comingSoon(context, 'Edit Profile')),
+          FutureBuilder<UserProfile>(
+            future: _profileFuture,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return _ProfileHeader(
+                  profile: snapshot.data!,
+                  onEdit: () => _comingSoon(context, 'Edit Profile'),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return _ProfileLoadError(
+                  onRetry: () {
+                    setState(() {
+                      _profileFuture = AppServices.profileApiClient
+                          .getCurrentUser();
+                    });
+                  },
+                );
+              }
+
+              return const _ProfileLoadingCard();
+            },
+          ),
           const SizedBox(height: 22),
 
           const _SectionTitle(title: 'My Activity'),
@@ -265,9 +302,24 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.onEdit});
+  const _ProfileHeader({required this.profile, required this.onEdit});
 
+  final UserProfile profile;
   final VoidCallback onEdit;
+
+  String get _formattedPhone {
+    final phone = profile.phone;
+
+    if (phone == null || phone.isEmpty) {
+      return 'No mobile number';
+    }
+
+    if (phone.startsWith('+61') && phone.length == 12) {
+      return '+61 ${phone.substring(3, 6)} ${phone.substring(6, 9)} ${phone.substring(9)}';
+    }
+
+    return phone;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -315,23 +367,29 @@ class _ProfileHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Hassan',
-            style: TextStyle(
+          Text(
+            profile.displayName,
+            style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'hassan@example.com',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          Text(
+            profile.email,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            '+61 4XX XXX XXX',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          Text(
+            _formattedPhone,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: 18),
           FilledButton.icon(
@@ -339,6 +397,62 @@ class _ProfileHeader extends StatelessWidget {
             icon: const Icon(Icons.edit_outlined, size: 18),
             label: const Text('Edit Profile'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileLoadingCard extends StatelessWidget {
+  const _ProfileLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 230,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border),
+      ),
+      alignment: Alignment.center,
+      child: const CircularProgressIndicator(),
+    );
+  }
+}
+
+class _ProfileLoadError extends StatelessWidget {
+  const _ProfileLoadError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: AppColors.error,
+            size: 34,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Unable to load your profile.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(onPressed: onRetry, child: const Text('Try Again')),
         ],
       ),
     );
