@@ -7,6 +7,8 @@ import { PrismaModule } from './infrastructure/database/prisma.module';
 import { LoggingModule } from './infrastructure/logging/logging.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
+import { VehiclesModule } from './modules/vehicles/vehicles.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { HealthModule } from './modules/health/health.module';
     LoggingModule,
     AuthModule,
     HealthModule,
+    RealtimeModule,
+    VehiclesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
