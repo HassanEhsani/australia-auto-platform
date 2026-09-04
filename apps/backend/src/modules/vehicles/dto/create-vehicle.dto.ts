@@ -29,6 +29,14 @@ export class CreateVehicleDto {
 
   @IsOptional()
   @IsString()
+  lotNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  auctionName?: string;
+
+  @IsOptional()
+  @IsString()
   vehicleType?: string;
 
   @IsOptional()

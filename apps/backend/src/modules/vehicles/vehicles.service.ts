@@ -2,14 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+import { StockNumberService } from './services/stock-number.service';
 
 @Injectable()
 export class VehiclesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stockNumberService: StockNumberService,
+  ) {}
 
-  create(createVehicleDto: CreateVehicleDto) {
+  async create(createVehicleDto: CreateVehicleDto) {
+    const stockNumber = await this.stockNumberService.generate();
+
     return this.prisma.vehicle.create({
-      data: createVehicleDto,
+      data: {
+        ...createVehicleDto,
+        stockNumber,
+      },
     });
   }
 
@@ -43,6 +52,33 @@ export class VehiclesService {
         id,
       },
       data: updateVehicleDto,
+    });
+  }
+
+  async publish(id: string) {
+    const vehicle = await this.prisma.vehicle.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!vehicle) {
+      throw new Error('Vehicle not found');
+    }
+
+    if (vehicle.status !== 'DRAFT') {
+      throw new Error(
+        `Vehicle cannot be published from status ${vehicle.status}`,
+      );
+    }
+
+    return this.prisma.vehicle.update({
+      where: {
+        id,
+      },
+      data: {
+        status: 'AVAILABLE',
+      },
     });
   }
 

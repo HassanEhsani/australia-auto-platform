@@ -9,6 +9,12 @@ export function configureApplication(
 
   app.setGlobalPrefix(apiPrefix);
 
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
